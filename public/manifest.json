@@ -1,11 +1,11 @@
 {
   "name": "Find the Imposter",
   "short_name": "Imposter",
-  "description": "Indian party game — find the imposter among your friends!",
+  "description": "Pass the phone, share a secret word, and figure out who is bluffing.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#7c3aed",
+  "background_color": "#f7f6f0",
+  "theme_color": "#f7f6f0",
   "orientation": "portrait",
   "icons": [
     {

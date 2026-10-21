@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CATEGORIES, getRandomWord } from '@/lib/categories';
 import { GameState, Player } from '@/lib/types';
 
 type Screen = 'home' | 'setup' | 'reveal' | 'playing' | 'result';
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 function generateId() {
   return Math.random().toString(36).slice(2);
@@ -19,51 +23,156 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-// ── HOME SCREEN ─────────────────────────────────────────────────────────────
+function InstallButton() {
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)');
+    const updateInstalled = () => setIsInstalled(standalone.matches);
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const handleInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    updateInstalled();
+    standalone.addEventListener('change', updateInstalled);
+    window.addEventListener('beforeinstallprompt', handleInstallPrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+
+    return () => {
+      standalone.removeEventListener('change', updateInstalled);
+      window.removeEventListener('beforeinstallprompt', handleInstallPrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, []);
+
+  const install = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  };
+
+  if (isInstalled) {
+    return <span className="installed-badge"><span aria-hidden="true">✓</span> Installed</span>;
+  }
+
+  if (installPrompt) {
+    return (
+      <button className="install-button" onClick={install} type="button">
+        <span aria-hidden="true">↓</span> Install app
+      </button>
+    );
+  }
+
+  return (
+    <details className="install-help">
+      <summary className="install-button"><span aria-hidden="true">↓</span> Install app</summary>
+      <div className="install-help-panel">
+        <strong>Take the game with you</strong>
+        <p>On iPhone or iPad, tap Share, then “Add to Home Screen”. On Android, open your browser menu and choose “Install app” or “Add to Home screen”.</p>
+      </div>
+    </details>
+  );
+}
+
+function Header({
+  onHome,
+  onRestart,
+  onExit,
+  inGame,
+}: {
+  onHome: () => void;
+  onRestart: () => void;
+  onExit: () => void;
+  inGame: boolean;
+}) {
+  return (
+    <header className="app-header">
+      <button className="brand" onClick={onHome} type="button" aria-label="Go to home">
+        <span className="brand-icon" aria-hidden="true">🕵️</span>
+        <span>imposter<span className="brand-period">.</span></span>
+      </button>
+      <div className="header-actions">
+        {inGame && (
+          <>
+            <button className="game-action-button" onClick={onRestart} type="button">
+              <span aria-hidden="true">↻</span> Restart round
+            </button>
+            <button className="game-action-button game-exit-button" onClick={onExit} type="button">
+              <span aria-hidden="true">←</span> Exit game
+            </button>
+          </>
+        )}
+        {!inGame && <InstallButton />}
+      </div>
+    </header>
+  );
+}
+
 function HomeScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 text-white">
-      <div className="text-center max-w-md w-full">
-        <div className="text-8xl mb-4 animate-bounce">🕵️</div>
-        <h1 className="text-5xl font-black mb-2 tracking-tight bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
-          Find the
-        </h1>
-        <h1 className="text-5xl font-black mb-6 tracking-tight bg-gradient-to-r from-pink-300 to-red-400 bg-clip-text text-transparent">
-          Imposter
-        </h1>
-        <p className="text-slate-300 text-lg mb-2">🇮🇳 Desi Edition</p>
-        <p className="text-slate-400 text-sm mb-10">
-          Pass the phone around. One player gets no word — they are the Imposter!
-        </p>
-
-        <button
-          onClick={onStart}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-xl font-bold shadow-lg shadow-purple-500/30 active:scale-95 transition-transform"
-        >
-          🎮 Start Game
-        </button>
-
-        {/* How to Play */}
-        <div className="mt-10 text-left bg-white/5 rounded-2xl p-5 border border-white/10">
-          <h2 className="font-bold text-lg mb-3 text-purple-300">📖 How to Play</h2>
-          <ol className="space-y-2 text-slate-300 text-sm list-decimal list-inside">
-            <li>Add 3–12 players with their names</li>
-            <li>Choose a category & number of imposters</li>
-            <li>Pass the phone to each player secretly</li>
-            <li>Everyone sees the word — except the Imposter(s)!</li>
-            <li>Take turns giving one-word clues related to the secret word</li>
-            <li>Discuss, vote, and Reveal the Imposter!</li>
-          </ol>
+    <div className="home-screen">
+      <section className="hero">
+        <div className="hero-copy">
+          <span className="eyebrow"><span className="live-dot" /> THE PARTY GAME FOR EVERYONE</span>
+          <h1>One word.<br /><span>One imposter.</span><br />Zero trust.</h1>
+          <p>Pass the phone, share a secret word, and figure out who&apos;s bluffing. Let the chaos begin.</p>
+          <button className="button button-primary hero-cta" onClick={onStart} type="button">
+            Set up a game <span aria-hidden="true">↗</span>
+          </button>
+          <div className="hero-meta">
+            <span><strong>3–12</strong> players</span>
+            <span className="meta-divider" />
+            <span><strong>5 min</strong> to play</span>
+            <span className="meta-divider" />
+            <span><strong>100%</strong> suspicion</span>
+          </div>
         </div>
-      </div>
+        <div className="hero-art" aria-label="A detective magnifying glass illustration">
+          <div className="art-orbit orbit-one" />
+          <div className="art-orbit orbit-two" />
+          <span className="art-spark spark-one">✳</span>
+          <span className="art-spark spark-two">✦</span>
+          <div className="detective-card">
+            <span className="detective-emoji" aria-hidden="true">🕵️</span>
+            <span className="detective-stamp">CASE<br />NO. 001</span>
+          </div>
+          <div className="clue-card clue-card-top"><span>THE WORD</span><strong>?</strong></div>
+          <div className="clue-card clue-card-bottom"><span>THE SUSPECT</span><strong>Among us</strong></div>
+        </div>
+      </section>
+
+      <section className="how-section">
+        <div className="section-heading">
+          <span className="eyebrow">QUICK BRIEFING</span>
+          <h2>Trust no one.<br /><span>Especially your friends.</span></h2>
+        </div>
+        <div className="steps-grid">
+          <article className="step-card"><span className="step-number">01</span><span className="step-icon">👥</span><h3>Gather your crew</h3><p>Add 3–12 players. The more suspicious, the better.</p></article>
+          <article className="step-card"><span className="step-number">02</span><span className="step-icon">🤫</span><h3>Keep it secret</h3><p>Pass the phone. Everyone gets the word… except the imposter.</p></article>
+          <article className="step-card"><span className="step-number">03</span><span className="step-icon">🗳️</span><h3>Call their bluff</h3><p>Drop clues, discuss, vote, and reveal who fooled you.</p></article>
+        </div>
+      </section>
+      <footer className="app-footer"><span>Made for suspicious friend groups.</span><span>Desi edition <span aria-hidden="true">✳</span></span></footer>
     </div>
   );
 }
 
-// ── SETUP SCREEN ─────────────────────────────────────────────────────────────
-function SetupScreen({ onPlay }: { onPlay: (players: string[], categoryId: string, imposterCount: number) => void }) {
-  const [names, setNames] = useState<string[]>(['', '']);
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0].id);
+function SetupScreen({
+  onPlay,
+  onCancel,
+}: {
+  onPlay: (players: string[], categoryIds: string[], imposterCount: number) => void;
+  onCancel: () => void;
+}) {
+  const [names, setNames] = useState<string[]>(['', '', '']);
+  const [categoryIds, setCategoryIds] = useState<string[]>([CATEGORIES[0].id]);
   const [imposterCount, setImposterCount] = useState(1);
   const [error, setError] = useState('');
 
@@ -71,126 +180,123 @@ function SetupScreen({ onPlay }: { onPlay: (players: string[], categoryId: strin
     if (names.length < 12) setNames([...names, '']);
   };
 
-  const removePlayer = (i: number) => {
-    if (names.length > 2) setNames(names.filter((_, idx) => idx !== i));
+  const removePlayer = (index: number) => {
+    if (names.length > 3) setNames(names.filter((_, i) => i !== index));
   };
 
-  const updateName = (i: number, val: string) => {
-    const next = [...names];
-    next[i] = val;
-    setNames(next);
+  const updateName = (index: number, value: string) => {
+    setNames(names.map((name, i) => i === index ? value : name));
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setCategoryIds(current => current.includes(categoryId)
+      ? current.filter(id => id !== categoryId)
+      : [...current, categoryId]);
+    setError('');
   };
 
   const handleStart = () => {
-    const filled = names.map(n => n.trim()).filter(Boolean);
-    if (filled.length < 3) { setError('Need at least 3 players!'); return; }
-    if (new Set(filled).size !== filled.length) { setError('Player names must be unique!'); return; }
-    if (imposterCount >= filled.length) { setError('Too many imposters for this group!'); return; }
+    const filled = names.map(name => name.trim()).filter(Boolean);
+    if (filled.length < 3) { setError('Add at least 3 player names to start.'); return; }
+    if (new Set(filled.map(name => name.toLocaleLowerCase())).size !== filled.length) {
+      setError('Each player needs a different name.'); return;
+    }
+    if (categoryIds.length === 0) { setError('Choose at least one category.'); return; }
+    if (imposterCount >= filled.length) { setError('You need more players than imposters.'); return; }
     setError('');
-    onPlay(filled, categoryId, imposterCount);
+    onPlay(filled, categoryIds, imposterCount);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white px-4 py-8">
-      <div className="max-w-md mx-auto">
-        <h2 className="text-3xl font-black mb-6 text-center">⚙️ Game Setup</h2>
-
-        {/* Players */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-lg text-purple-300">👥 Players ({names.length}/12)</h3>
-          </div>
-          <div className="space-y-2">
-            {names.map((name, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder={`Player ${i + 1}`}
-                  value={name}
-                  onChange={e => updateName(i, e.target.value)}
-                  maxLength={20}
-                  className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition-colors"
-                />
-                {names.length > 2 && (
-                  <button
-                    onClick={() => removePlayer(i)}
-                    className="px-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 hover:bg-red-500/30 transition-colors"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          {names.length < 12 && (
-            <button
-              onClick={addPlayer}
-              className="mt-3 w-full py-2 bg-white/5 border border-dashed border-white/20 rounded-xl text-slate-400 hover:bg-white/10 transition-colors text-sm"
-            >
-              + Add Player
-            </button>
-          )}
-        </div>
-
-        {/* Category */}
-        <div className="mb-6">
-          <h3 className="font-bold text-lg text-purple-300 mb-3">📦 Category</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setCategoryId(cat.id)}
-                className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${
-                  categoryId === cat.id
-                    ? 'bg-purple-500/30 border-purple-400 text-white'
-                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                <div className="text-xl">{cat.emoji}</div>
-                <div className="text-xs mt-1 font-medium leading-tight">{cat.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Imposter Count */}
-        <div className="mb-6">
-          <h3 className="font-bold text-lg text-purple-300 mb-3">🎭 Number of Imposters</h3>
-          <div className="flex gap-3">
-            {[1, 2].map(n => (
-              <button
-                key={n}
-                onClick={() => setImposterCount(n)}
-                className={`flex-1 py-4 rounded-xl border text-xl font-bold transition-all active:scale-95 ${
-                  imposterCount === n
-                    ? 'bg-red-500/30 border-red-400 text-red-300'
-                    : 'bg-white/5 border-white/10 text-slate-300'
-                }`}
-              >
-                {n} Imposter{n > 1 ? 's' : ''}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm text-center">
-            ⚠️ {error}
-          </div>
-        )}
-
-        <button
-          onClick={handleStart}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-xl font-bold shadow-lg shadow-purple-500/30 active:scale-95 transition-transform"
-        >
-          🚀 Start Round
-        </button>
+    <div className="setup-page">
+      <div className="setup-heading">
+        <button className="text-button" onClick={onCancel} type="button"><span aria-hidden="true">←</span> Back</button>
+        <span className="eyebrow">BEFORE THE MYSTERY</span>
+        <h1>Build your crew<span>.</span></h1>
+        <p>Pick your players, then choose what everyone knows.</p>
       </div>
+
+      <section className="setup-section">
+        <div className="section-title-row">
+          <div><span className="section-kicker">01 / THE PLAYERS</span><h2>Your crew</h2></div>
+          <span className="count-pill">{names.length} / 12</span>
+        </div>
+        <div className="player-list">
+          {names.map((name, i) => (
+            <label className="player-row" key={i}>
+              <span className="player-index">{String(i + 1).padStart(2, '0')}</span>
+              <input
+                aria-label={`Player ${i + 1} name`}
+                type="text"
+                placeholder={`Player ${i + 1}`}
+                value={name}
+                onChange={event => updateName(i, event.target.value)}
+                maxLength={20}
+              />
+              {names.length > 3 && <button className="remove-player" onClick={() => removePlayer(i)} type="button" aria-label={`Remove player ${i + 1}`}>×</button>}
+            </label>
+          ))}
+        </div>
+        {names.length < 12 && <button className="add-player" onClick={addPlayer} type="button"><span aria-hidden="true">＋</span> Add another player</button>}
+      </section>
+
+      <section className="setup-section">
+        <div className="section-title-row">
+          <div><span className="section-kicker">02 / THE SUBJECT</span><h2>Pick your categories</h2></div>
+          <span className="count-pill">{categoryIds.length} selected</span>
+        </div>
+        <p className="section-hint">Choose one or more. We&apos;ll pick a category for each round.</p>
+        <div className="category-grid">
+          {CATEGORIES.map(category => {
+            const selected = categoryIds.includes(category.id);
+            return (
+              <button
+                aria-pressed={selected}
+                className={`category-card${selected ? ' is-selected' : ''}`}
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                type="button"
+              >
+                <span className="category-emoji" aria-hidden="true">{category.emoji}</span>
+                <span className="category-name">{category.name}</span>
+                <span className="category-check" aria-hidden="true">{selected ? '✓' : '+'}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="setup-section imposter-section">
+        <div className="section-title-row">
+          <div><span className="section-kicker">03 / THE WILDCARDS</span><h2>Choose your imposters</h2></div>
+          <span className="imposter-icon" aria-hidden="true">😈</span>
+        </div>
+        <div className="choice-row">
+          {[1, 2].map(count => (
+            <button
+              aria-pressed={imposterCount === count}
+              className={`choice-card${imposterCount === count ? ' is-selected' : ''}`}
+              key={count}
+              onClick={() => setImposterCount(count)}
+              type="button"
+            >
+              <span className="choice-count">{count}</span>
+              <span>{count === 1 ? 'Imposter' : 'Imposters'}</span>
+              <span className="choice-radio" aria-hidden="true">{imposterCount === count ? '●' : '○'}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {error && <p className="form-error" role="alert"><span aria-hidden="true">!</span> {error}</p>}
+      <button className="button button-primary start-round" onClick={handleStart} type="button">
+        Start the round <span aria-hidden="true">↗</span>
+      </button>
+      <p className="privacy-note"><span aria-hidden="true">🔒</span> Your secret stays on this device.</p>
     </div>
   );
 }
 
-// ── CARD REVEAL SCREEN ───────────────────────────────────────────────────────
 function RevealScreen({
   game,
   onViewDone,
@@ -204,272 +310,152 @@ function RevealScreen({
   const current = game.players[game.currentRevealIndex];
   const isLast = game.currentRevealIndex === game.players.length - 1;
 
-  const handleReveal = () => setShown(true);
-
   const handleDone = () => {
     setShown(false);
-    if (isLast) {
-      onAllViewed();
-    } else {
-      onViewDone();
-    }
+    if (isLast) onAllViewed();
+    else onViewDone();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex flex-col items-center justify-center px-6">
-      <div className="max-w-sm w-full text-center">
-        {/* Progress dots */}
-        <div className="flex gap-1.5 justify-center mb-8">
-          {game.players.map((_, i) => (
-            <div
-              key={i}
-              className={`h-2 rounded-full transition-all ${
-                i < game.currentRevealIndex
-                  ? 'w-6 bg-purple-400'
-                  : i === game.currentRevealIndex
-                  ? 'w-8 bg-pink-400'
-                  : 'w-2 bg-white/20'
-              }`}
-            />
-          ))}
+    <div className="game-page reveal-page">
+      <div className="game-card reveal-card">
+        <div className="game-progress-label"><span>SECRET CHECK</span><span>{String(game.currentRevealIndex + 1).padStart(2, '0')} / {String(game.players.length).padStart(2, '0')}</span></div>
+        <div className="progress-track" aria-label={`Player ${game.currentRevealIndex + 1} of ${game.players.length}`}>
+          <span style={{ width: `${((game.currentRevealIndex + 1) / game.players.length) * 100}%` }} />
         </div>
-
-        <p className="text-slate-400 text-sm mb-2">
-          Player {game.currentRevealIndex + 1} of {game.players.length}
-        </p>
-        <h2 className="text-3xl font-black mb-8">
-          👋 Hey, <span className="text-pink-300">{current.name}!</span>
-        </h2>
-
+        <span className="eyebrow">PASS THE PHONE</span>
+        <h1>Your turn,<br /><span>{current.name}.</span></h1>
         {!shown ? (
           <>
-            <p className="text-slate-300 mb-8 text-sm">
-              Make sure no one else is watching.<br />Tap the card to see your word.
-            </p>
-            <button
-              onClick={handleReveal}
-              className="w-full py-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-3xl text-6xl shadow-2xl shadow-purple-500/40 active:scale-95 transition-transform border border-white/10"
-            >
-              🃏
-              <p className="text-lg font-bold mt-3">Tap to reveal</p>
+            <p className="game-copy">Make sure nobody else is looking. Your secret is for your eyes only.</p>
+            <button className="secret-card secret-card-hidden" onClick={() => setShown(true)} type="button">
+              <span className="secret-card-mark" aria-hidden="true">✳</span>
+              <strong>Tap to reveal</strong>
+              <span>Keep it under wraps</span>
             </button>
           </>
         ) : (
           <>
-            {current.isImposter ? (
-              <div className="w-full py-16 bg-gradient-to-br from-red-900 to-red-700 rounded-3xl shadow-2xl border border-red-500/50 mb-8">
-                <div className="text-6xl mb-4">😈</div>
-                <p className="text-red-200 text-sm font-medium mb-2">You are the</p>
-                <p className="text-4xl font-black text-red-100">IMPOSTER!</p>
-                <p className="text-red-300 text-xs mt-4 px-4">
-                  You don&apos;t know the word. Blend in, give vague clues, don&apos;t get caught!
-                </p>
-              </div>
-            ) : (
-              <div className="w-full py-16 bg-gradient-to-br from-purple-800 to-indigo-800 rounded-3xl shadow-2xl border border-purple-400/30 mb-8">
-                <div className="text-4xl mb-4">🔑</div>
-                <p className="text-purple-200 text-sm font-medium mb-2">Secret word:</p>
-                <p className="text-4xl font-black text-white">{game.word}</p>
-                <p className="text-purple-300 text-xs mt-4 px-4">
-                  Give clues without making it too obvious!
-                </p>
-              </div>
-            )}
-            <button
-              onClick={handleDone}
-              className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-lg font-bold active:scale-95 transition-transform"
-            >
-              {isLast ? '🎮 Everyone is ready!' : '➡️ Pass to next player'}
+            <div className={`secret-card ${current.isImposter ? 'secret-card-imposter' : 'secret-card-word'}`}>
+              <span className="secret-card-mark" aria-hidden="true">{current.isImposter ? '😈' : '🔑'}</span>
+              <span className="secret-label">{current.isImposter ? 'YOUR COVER STORY' : 'THE SECRET WORD'}</span>
+              <strong>{current.isImposter ? 'You are the imposter' : game.word}</strong>
+              <span>{current.isImposter ? 'Blend in. Bluff well. Good luck.' : 'Give clues, but don’t make it obvious.'}</span>
+            </div>
+            <button className="button button-primary full-button" onClick={handleDone} type="button">
+              {isLast ? 'Everyone is ready' : 'Pass to the next player'} <span aria-hidden="true">→</span>
             </button>
           </>
         )}
+        <div className="pass-note"><span aria-hidden="true">☝</span> Only {current.name} should look at the screen</div>
       </div>
     </div>
   );
 }
 
-// ── PLAYING SCREEN ───────────────────────────────────────────────────────────
-function PlayingScreen({
-  game,
-  onReveal,
-  onNewGame,
-}: {
-  game: GameState;
-  onReveal: () => void;
-  onNewGame: () => void;
-}) {
+function PlayingScreen({ game, onReveal, onNewGame }: { game: GameState; onReveal: () => void; onNewGame: () => void }) {
   const [confirmReveal, setConfirmReveal] = useState(false);
-  const category = CATEGORIES.find(c => c.id === game.categoryId)!;
+  const category = CATEGORIES.find(item => item.id === game.categoryId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white px-4 py-8">
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">{category.emoji}</div>
-          <p className="text-purple-300 font-medium">{category.name}</p>
-          <h2 className="text-2xl font-black mt-1">Game in Progress...</h2>
+    <div className="game-page">
+      <div className="game-card">
+        <span className="eyebrow"><span className="live-dot" /> THE DISCUSSION IS LIVE</span>
+        <div className="playing-heading">
+          <span className="playing-emoji" aria-hidden="true">{category?.emoji ?? '🎭'}</span>
+          <div><span className="section-kicker">THIS ROUND&apos;S CATEGORY</span><h1>{category?.name ?? game.categoryName}</h1></div>
         </div>
+        <p className="game-copy">Share one-word clues. The imposter is listening — and trying to sound like they belong.</p>
 
-        {/* Players list */}
-        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6">
-          <h3 className="text-purple-300 font-bold mb-3">👥 Players</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {game.players.map(p => (
-              <div key={p.id} className="bg-white/5 rounded-xl px-3 py-2 text-sm font-medium">
-                {p.name}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-8">
-          <h3 className="text-purple-300 font-bold mb-2">💡 Reminder</h3>
-          <ul className="text-slate-300 text-sm space-y-1.5">
-            <li>• Each player gives one-word clues</li>
-            <li>• Don&apos;t say the secret word directly</li>
-            <li>• Imposter must bluff their way through</li>
-            <li>• Discuss and vote when ready</li>
-          </ul>
-        </div>
+        <section className="game-panel">
+          <div className="panel-heading"><h2>The players</h2><span className="count-pill">{game.players.length} in the room</span></div>
+          <div className="player-chip-list">{game.players.map((player, i) => <span className="player-chip" key={player.id}><span className="chip-number">{String(i + 1).padStart(2, '0')}</span>{player.name}</span>)}</div>
+        </section>
+        <section className="game-panel reminder-panel">
+          <span className="reminder-mark" aria-hidden="true">✳</span>
+          <div><h2>Keep your clues clever</h2><p>No saying the word out loud. Discuss, debate, and vote when the group is ready.</p></div>
+        </section>
 
         {!confirmReveal ? (
-          <button
-            onClick={() => setConfirmReveal(true)}
-            className="w-full py-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl text-lg font-bold shadow-lg shadow-red-500/30 active:scale-95 transition-transform mb-3"
-          >
-            🔍 Reveal the Imposter!
-          </button>
+          <button className="button button-danger full-button" onClick={() => setConfirmReveal(true)} type="button">Reveal the imposter <span aria-hidden="true">↗</span></button>
         ) : (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-3">
-            <p className="text-center text-red-300 font-bold mb-3">Sure everyone has voted?</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmReveal(false)}
-                className="flex-1 py-3 bg-white/10 rounded-xl font-medium active:scale-95 transition-transform"
-              >
-                Not yet
-              </button>
-              <button
-                onClick={onReveal}
-                className="flex-1 py-3 bg-red-500 rounded-xl font-bold active:scale-95 transition-transform"
-              >
-                Yes, Reveal!
-              </button>
+          <div className="confirm-panel" role="group" aria-label="Confirm reveal">
+            <p>Everyone voted? This reveals the secret word, too.</p>
+            <div className="confirm-actions">
+              <button className="button button-secondary" onClick={() => setConfirmReveal(false)} type="button">Keep playing</button>
+              <button className="button button-danger" onClick={onReveal} type="button">Reveal now</button>
             </div>
           </div>
         )}
-
-        <button
-          onClick={onNewGame}
-          className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 text-sm active:scale-95 transition-transform"
-        >
-          ↩ Cancel & New Game
-        </button>
+        <button className="text-button restart-button" onClick={onNewGame} type="button">End this round</button>
       </div>
     </div>
   );
 }
 
-// ── RESULT SCREEN ─────────────────────────────────────────────────────────────
-function ResultScreen({
-  game,
-  onPlayAgain,
-  onNewGame,
-}: {
-  game: GameState;
-  onPlayAgain: () => void;
-  onNewGame: () => void;
-}) {
-  const imposters = game.players.filter(p => p.isImposter);
-  const crewmates = game.players.filter(p => !p.isImposter);
-  const category = CATEGORIES.find(c => c.id === game.categoryId)!;
+function ResultScreen({ game, onPlayAgain, onNewGame }: { game: GameState; onPlayAgain: () => void; onNewGame: () => void }) {
+  const imposters = game.players.filter(player => player.isImposter);
+  const crewmates = game.players.filter(player => !player.isImposter);
+  const category = CATEGORIES.find(item => item.id === game.categoryId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white px-4 py-8">
-      <div className="max-w-md mx-auto text-center">
-        <div className="text-7xl mb-4">🎭</div>
-        <h2 className="text-4xl font-black mb-2">Reveal!</h2>
-        <p className="text-slate-400 mb-8">Here&apos;s who was lying all along...</p>
+    <div className="game-page result-page">
+      <div className="game-card result-card">
+        <span className="eyebrow">CASE CLOSED</span>
+        <span className="result-stamp" aria-hidden="true">✳</span>
+        <h1>Caught in<br /><span>the act.</span></h1>
+        <p className="game-copy">The truth is out. Were your suspicions right?</p>
 
-        {/* Imposters */}
-        <div className="bg-gradient-to-br from-red-900/60 to-red-800/40 border border-red-500/40 rounded-2xl p-5 mb-4">
-          <p className="text-red-300 text-sm font-medium mb-1">
-            😈 {imposters.length > 1 ? 'Imposters were' : 'Imposter was'}
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center mt-2">
-            {imposters.map(p => (
-              <span key={p.id} className="bg-red-500/30 border border-red-400/40 px-4 py-2 rounded-xl text-xl font-black text-red-100">
-                {p.name}
-              </span>
-            ))}
-          </div>
-        </div>
+        <section className="reveal-panel imposter-panel">
+          <span className="section-kicker">THE IMPOSTER{imposters.length > 1 ? 'S' : ''}</span>
+          <div className="result-names">{imposters.map(player => <span className="result-name" key={player.id}>😈 {player.name}</span>)}</div>
+        </section>
+        <section className="reveal-panel word-panel">
+          <span className="section-kicker">{category?.emoji ?? '🔑'} THE SECRET WORD · {category?.name ?? game.categoryName}</span>
+          <strong>{game.word}</strong>
+        </section>
+        <section className="crew-summary">
+          <span className="section-kicker">THE REST OF THE CREW</span>
+          <div>{crewmates.map(player => <span className="crew-name" key={player.id}>{player.name}</span>)}</div>
+        </section>
 
-        {/* Word reveal */}
-        <div className="bg-gradient-to-br from-purple-900/60 to-indigo-900/40 border border-purple-500/40 rounded-2xl p-5 mb-4">
-          <p className="text-purple-300 text-sm font-medium mb-1">
-            {category.emoji} Secret word in <strong>{category.name}</strong>
-          </p>
-          <p className="text-4xl font-black text-white mt-2">{game.word}</p>
-        </div>
-
-        {/* Crewmates */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-8">
-          <p className="text-slate-400 text-sm mb-2">✅ Crewmates</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {crewmates.map(p => (
-              <span key={p.id} className="bg-white/10 px-3 py-1 rounded-lg text-sm text-slate-300">
-                {p.name}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={onPlayAgain}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-xl font-bold shadow-lg shadow-purple-500/30 active:scale-95 transition-transform mb-3"
-        >
-          🔁 Play Again (Same Players)
-        </button>
-        <button
-          onClick={onNewGame}
-          className="w-full py-3 bg-white/5 border border-white/10 rounded-2xl text-slate-400 active:scale-95 transition-transform"
-        >
-          🏠 New Game
-        </button>
+        <button className="button button-primary full-button" onClick={onPlayAgain} type="button">Play another round <span aria-hidden="true">↗</span></button>
+        <button className="text-button restart-button" onClick={onNewGame} type="button">Start a new game</button>
       </div>
     </div>
   );
 }
 
-// ── ROOT COMPONENT ────────────────────────────────────────────────────────────
 export default function Home() {
   const [screen, setScreen] = useState<Screen>('home');
   const [game, setGame] = useState<GameState | null>(null);
-  const [setupData, setSetupData] = useState<{ players: string[]; categoryId: string; imposterCount: number } | null>(null);
+  const [setupData, setSetupData] = useState<{ players: string[]; categoryIds: string[]; imposterCount: number } | null>(null);
+  const [pendingAction, setPendingAction] = useState<'restart' | 'exit' | null>(null);
 
-  const startGame = useCallback((players: string[], categoryId: string, imposterCount: number) => {
-    setSetupData({ players, categoryId, imposterCount });
-    const category = CATEGORIES.find(c => c.id === categoryId)!;
-    const word = getRandomWord(category);
-
-    // Assign imposters randomly
-    const shuffledNames = shuffle(players);
-    const imposterNames = new Set(shuffledNames.slice(0, imposterCount));
-
-    const playerObjs: Player[] = shuffle(
-      players.map(name => ({
-        id: generateId(),
-        name,
-        isImposter: imposterNames.has(name),
-        hasViewed: false,
-      }))
-    );
+  const startGame = useCallback((players: string[], categoryIds: string[], imposterCount: number, previousGame?: GameState) => {
+    setSetupData({ players, categoryIds, imposterCount });
+    const availableCategories = CATEGORIES.filter(category => categoryIds.includes(category.id));
+    const alternateCategories = availableCategories.filter(category => category.id !== previousGame?.categoryId);
+    const categoryPool = alternateCategories.length > 0 ? alternateCategories : availableCategories;
+    const category = categoryPool[Math.floor(Math.random() * categoryPool.length)];
+    const availableWords = category.id === previousGame?.categoryId
+      ? category.words.filter(word => word !== previousGame.word)
+      : category.words;
+    const word = availableWords.length > 0
+      ? availableWords[Math.floor(Math.random() * availableWords.length)]
+      : getRandomWord(category);
+    const imposterNames = new Set(shuffle(players).slice(0, imposterCount));
+    const playerObjs: Player[] = shuffle(players.map(name => ({
+      id: generateId(),
+      name,
+      isImposter: imposterNames.has(name),
+      hasViewed: false,
+    })));
 
     setGame({
       phase: 'reveal',
       players: playerObjs,
-      categoryId,
+      categoryId: category.id,
       categoryName: category.name,
       word,
       imposterCount,
@@ -480,44 +466,58 @@ export default function Home() {
   }, []);
 
   const handleViewDone = useCallback(() => {
-    setGame(prev => {
-      if (!prev) return prev;
-      return { ...prev, currentRevealIndex: prev.currentRevealIndex + 1 };
-    });
+    setGame(previous => previous ? { ...previous, currentRevealIndex: previous.currentRevealIndex + 1 } : previous);
   }, []);
-
-  const handleAllViewed = useCallback(() => {
-    setScreen('playing');
-  }, []);
-
-  const handleReveal = useCallback(() => {
-    setScreen('result');
-  }, []);
-
   const handlePlayAgain = useCallback(() => {
-    if (!setupData) return;
-    startGame(setupData.players, setupData.categoryId, setupData.imposterCount);
-  }, [setupData, startGame]);
-
+    if (setupData && game) startGame(setupData.players, setupData.categoryIds, setupData.imposterCount, game);
+  }, [game, setupData, startGame]);
   const handleNewGame = useCallback(() => {
     setGame(null);
     setSetupData(null);
+    setPendingAction(null);
     setScreen('home');
   }, []);
 
+  const confirmPendingAction = () => {
+    const action = pendingAction;
+    setPendingAction(null);
+    if (action === 'restart') handlePlayAgain();
+    if (action === 'exit') handleNewGame();
+  };
+
   return (
-    <>
+    <main className="app-shell">
+      <Header
+        onHome={screen === 'reveal' || screen === 'playing' || screen === 'result' ? () => setPendingAction('exit') : handleNewGame}
+        onRestart={() => setPendingAction('restart')}
+        onExit={() => setPendingAction('exit')}
+        inGame={screen === 'reveal' || screen === 'playing' || screen === 'result'}
+      />
       {screen === 'home' && <HomeScreen onStart={() => setScreen('setup')} />}
-      {screen === 'setup' && <SetupScreen onPlay={startGame} />}
-      {screen === 'reveal' && game && (
-        <RevealScreen game={game} onViewDone={handleViewDone} onAllViewed={handleAllViewed} />
+      {screen === 'setup' && <SetupScreen onPlay={startGame} onCancel={handleNewGame} />}
+      {screen === 'reveal' && game && <RevealScreen game={game} onViewDone={handleViewDone} onAllViewed={() => setScreen('playing')} />}
+      {screen === 'playing' && game && <PlayingScreen game={game} onReveal={() => setScreen('result')} onNewGame={() => setPendingAction('exit')} />}
+      {screen === 'result' && game && <ResultScreen game={game} onPlayAgain={handlePlayAgain} onNewGame={() => setPendingAction('exit')} />}
+      {pendingAction && (
+        <div className="dialog-backdrop">
+          <section className="action-dialog" role="alertdialog" aria-modal="true" aria-labelledby="action-dialog-title" aria-describedby="action-dialog-description">
+            <span className="dialog-icon" aria-hidden="true">{pendingAction === 'restart' ? '↻' : '←'}</span>
+            <span className="section-kicker">{pendingAction === 'restart' ? 'NEW ROUND' : 'LEAVE THE GAME'}</span>
+            <h2 id="action-dialog-title">{pendingAction === 'restart' ? 'Deal a fresh round?' : 'Exit to the home screen?'}</h2>
+            <p id="action-dialog-description">
+              {pendingAction === 'restart'
+                ? 'Same crew and category choices, with a different category or secret word.'
+                : 'Your current round will end. You can always set up another game.'}
+            </p>
+            <div className="dialog-actions">
+              <button className="button button-secondary" onClick={() => setPendingAction(null)} type="button">Keep playing</button>
+              <button className={`button ${pendingAction === 'restart' ? 'button-primary' : 'button-danger'}`} onClick={confirmPendingAction} type="button">
+                {pendingAction === 'restart' ? 'Restart round' : 'Exit game'}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
-      {screen === 'playing' && game && (
-        <PlayingScreen game={game} onReveal={handleReveal} onNewGame={handleNewGame} />
-      )}
-      {screen === 'result' && game && (
-        <ResultScreen game={game} onPlayAgain={handlePlayAgain} onNewGame={handleNewGame} />
-      )}
-    </>
+    </main>
   );
 }

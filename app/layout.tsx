@@ -5,12 +5,12 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Find the Imposter 🕵️",
-  description: "Indian party game — find the imposter among your friends! Pass the phone, give clues, vote!",
+  title: "Find the Imposter — Desi Party Game",
+  description: "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite Desi categories.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Imposter",
   },
   openGraph: {
@@ -21,11 +21,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7c3aed",
+  themeColor: "#f7f6f0",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({
