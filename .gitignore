@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.npm
+
+# Next.js
+.next/
+out/
+build/
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/fallback-*.js
+public/sw.js.map
+public/workbox-*.js.map
+
+# Environment
+.env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
