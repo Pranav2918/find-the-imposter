@@ -91,7 +91,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     id: "desi_shows",
-    name: "Desi TV Shows",
+    name: "TV Shows",
     emoji: "📺",
     words: [
       "Ramayan", "Mahabharat", "Taarak Mehta", "KBC", "Bigg Boss",

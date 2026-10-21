@@ -10,6 +10,36 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
+// Add or remove in-game options here, and update GAME_ACTION_HANDLERS below.
+const GAME_ACTIONS = [
+  {
+    id: 'restart',
+    label: 'Restart round',
+    icon: '↻',
+    buttonClass: 'game-action-button',
+    dialogIcon: '↻',
+    dialogEyebrow: 'NEW ROUND',
+    dialogTitle: 'Deal a fresh round?',
+    dialogDescription: 'Same crew and category choices, with a different category or secret word.',
+    confirmLabel: 'Restart round',
+    confirmClass: 'button-primary',
+  },
+  {
+    id: 'exit',
+    label: 'Exit game',
+    icon: '←',
+    buttonClass: 'game-action-button game-exit-button',
+    dialogIcon: '←',
+    dialogEyebrow: 'LEAVE THE GAME',
+    dialogTitle: 'Exit to the home screen?',
+    dialogDescription: 'Your current round will end. You can always set up another game.',
+    confirmLabel: 'Exit game',
+    confirmClass: 'button-danger',
+  },
+] as const;
+
+type GameAction = typeof GAME_ACTIONS[number]['id'];
+
 function generateId() {
   return Math.random().toString(36).slice(2);
 }
@@ -83,13 +113,11 @@ function InstallButton() {
 
 function Header({
   onHome,
-  onRestart,
-  onExit,
+  onGameAction,
   inGame,
 }: {
   onHome: () => void;
-  onRestart: () => void;
-  onExit: () => void;
+  onGameAction: (action: GameAction) => void;
   inGame: boolean;
 }) {
   return (
@@ -100,14 +128,16 @@ function Header({
       </button>
       <div className="header-actions">
         {inGame && (
-          <>
-            <button className="game-action-button" onClick={onRestart} type="button">
-              <span aria-hidden="true">↻</span> Restart round
+          GAME_ACTIONS.map(action => (
+            <button
+              className={action.buttonClass}
+              key={action.id}
+              onClick={() => onGameAction(action.id)}
+              type="button"
+            >
+              <span aria-hidden="true">{action.icon}</span> {action.label}
             </button>
-            <button className="game-action-button game-exit-button" onClick={onExit} type="button">
-              <span aria-hidden="true">←</span> Exit game
-            </button>
-          </>
+          ))
         )}
         {!inGame && <InstallButton />}
       </div>
@@ -159,7 +189,7 @@ function HomeScreen({ onStart }: { onStart: () => void }) {
           <article className="step-card"><span className="step-number">03</span><span className="step-icon">🗳️</span><h3>Call their bluff</h3><p>Drop clues, discuss, vote, and reveal who fooled you.</p></article>
         </div>
       </section>
-      <footer className="app-footer"><span>Made for suspicious friend groups.</span><span>Desi edition <span aria-hidden="true">✳</span></span></footer>
+      <footer className="app-footer"><span>Made for suspicious friend groups.</span><span>Party edition <span aria-hidden="true">✳</span></span></footer>
     </div>
   );
 }
@@ -481,16 +511,19 @@ export default function Home() {
   const confirmPendingAction = () => {
     const action = pendingAction;
     setPendingAction(null);
-    if (action === 'restart') handlePlayAgain();
-    if (action === 'exit') handleNewGame();
+    if (action) GAME_ACTION_HANDLERS[action]();
   };
+  const GAME_ACTION_HANDLERS: Record<GameAction, () => void> = {
+    restart: handlePlayAgain,
+    exit: handleNewGame,
+  };
+  const pendingActionConfig = GAME_ACTIONS.find(action => action.id === pendingAction);
 
   return (
     <main className="app-shell">
       <Header
         onHome={screen === 'reveal' || screen === 'playing' || screen === 'result' ? () => setPendingAction('exit') : handleNewGame}
-        onRestart={() => setPendingAction('restart')}
-        onExit={() => setPendingAction('exit')}
+        onGameAction={setPendingAction}
         inGame={screen === 'reveal' || screen === 'playing' || screen === 'result'}
       />
       {screen === 'home' && <HomeScreen onStart={() => setScreen('setup')} />}
@@ -501,18 +534,14 @@ export default function Home() {
       {pendingAction && (
         <div className="dialog-backdrop">
           <section className="action-dialog" role="alertdialog" aria-modal="true" aria-labelledby="action-dialog-title" aria-describedby="action-dialog-description">
-            <span className="dialog-icon" aria-hidden="true">{pendingAction === 'restart' ? '↻' : '←'}</span>
-            <span className="section-kicker">{pendingAction === 'restart' ? 'NEW ROUND' : 'LEAVE THE GAME'}</span>
-            <h2 id="action-dialog-title">{pendingAction === 'restart' ? 'Deal a fresh round?' : 'Exit to the home screen?'}</h2>
-            <p id="action-dialog-description">
-              {pendingAction === 'restart'
-                ? 'Same crew and category choices, with a different category or secret word.'
-                : 'Your current round will end. You can always set up another game.'}
-            </p>
+            <span className="dialog-icon" aria-hidden="true">{pendingActionConfig?.dialogIcon}</span>
+            <span className="section-kicker">{pendingActionConfig?.dialogEyebrow}</span>
+            <h2 id="action-dialog-title">{pendingActionConfig?.dialogTitle}</h2>
+            <p id="action-dialog-description">{pendingActionConfig?.dialogDescription}</p>
             <div className="dialog-actions">
               <button className="button button-secondary" onClick={() => setPendingAction(null)} type="button">Keep playing</button>
-              <button className={`button ${pendingAction === 'restart' ? 'button-primary' : 'button-danger'}`} onClick={confirmPendingAction} type="button">
-                {pendingAction === 'restart' ? 'Restart round' : 'Exit game'}
+              <button className={`button ${pendingActionConfig?.confirmClass}`} onClick={confirmPendingAction} type="button">
+                {pendingActionConfig?.confirmLabel}
               </button>
             </div>
           </section>

@@ -5,8 +5,8 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Find the Imposter — Desi Party Game",
-  description: "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite Desi categories.",
+  title: "Find the Imposter — Party Game",
+  description: "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite categories.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     title: "Imposter",
   },
   openGraph: {
-    title: "Find the Imposter 🕵️ — Desi Edition",
-    description: "Indian party game for cafes and friend groups. Pass the phone, find the imposter!",
+    title: "Find the Imposter 🕵️ — Party Edition",
+    description: "Party game for cafes and friend groups. Pass the phone, find the imposter!",
     type: "website",
   },
 };
