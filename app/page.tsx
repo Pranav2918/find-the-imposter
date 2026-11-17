@@ -146,51 +146,129 @@ function Header({
 }
 
 function HomeScreen({ onStart }: { onStart: () => void }) {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Who Is the Imposter',
+    applicationCategory: 'Game',
+    operatingSystem: 'Any',
+    browserRequirements: 'Requires a modern web browser',
+    description:
+      'Who Is the Imposter is a free online party game for 3-12 players. Share a secret word, bluff, and vote out the imposter.',
+    inLanguage: 'en',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    audience: {
+      '@type': 'Audience',
+      audienceType: 'Friends, families, and social groups',
+    },
+  };
+
   return (
-    <div className="home-screen">
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow"><span className="live-dot" /> THE PARTY GAME FOR EVERYONE</span>
-          <h1>One word.<br /><span>One imposter.</span><br />Zero trust.</h1>
-          <p>Pass the phone, share a secret word, and figure out who&apos;s bluffing. Let the chaos begin.</p>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <div className="home-screen">
+        <section className="hero">
+          <div className="hero-copy">
+            <span className="eyebrow"><span className="live-dot" /> THE PARTY GAME FOR EVERYONE</span>
+            <h1>Who Is the Imposter?<br /><span>Play the ultimate party game.</span></h1>
+            <p>Play Who Is the Imposter, a free online party game for 3–12 players. Share a secret word, read the room, and catch the imposter before the round ends.</p>
+            <button className="button button-primary hero-cta" onClick={onStart} type="button">
+              Set up a game <span aria-hidden="true">↗</span>
+            </button>
+            <div className="hero-meta">
+              <span><strong>3–12</strong> players</span>
+              <span className="meta-divider" />
+              <span><strong>5 min</strong> to play</span>
+              <span className="meta-divider" />
+              <span><strong>100%</strong> suspicion</span>
+            </div>
+          </div>
+          <div className="hero-art" aria-label="A detective magnifying glass illustration">
+            <div className="art-orbit orbit-one" />
+            <div className="art-orbit orbit-two" />
+            <span className="art-spark spark-one">✳</span>
+            <span className="art-spark spark-two">✦</span>
+            <div className="detective-card">
+              <span className="detective-emoji" aria-hidden="true">🕵️</span>
+              <span className="detective-stamp">CASE<br />NO. 001</span>
+            </div>
+            <div className="clue-card clue-card-top"><span>THE WORD</span><strong>?</strong></div>
+            <div className="clue-card clue-card-bottom"><span>THE SUSPECT</span><strong>Among us</strong></div>
+          </div>
+        </section>
+
+        <section className="how-section">
+          <div className="section-heading">
+            <span className="eyebrow">QUICK BRIEFING</span>
+            <h2>How to play the imposter game</h2>
+          </div>
+          <div className="steps-grid">
+            <article className="step-card"><span className="step-number">01</span><span className="step-icon">👥</span><h3>Gather your crew</h3><p>Add 3–12 players and set up a round for your group, friends, or party night.</p></article>
+            <article className="step-card"><span className="step-number">02</span><span className="step-icon">🤫</span><h3>Keep it secret</h3><p>Everyone gets a secret word, but the imposter has a different cover story and must bluff convincingly.</p></article>
+            <article className="step-card"><span className="step-number">03</span><span className="step-icon">🗳️</span><h3>Call their bluff</h3><p>Listen to clues, debate, and vote on who is lying before the round ends.</p></article>
+          </div>
+        </section>
+
+        <section className="info-grid" aria-label="About the game">
+          <article className="info-panel">
+            <span className="eyebrow">WHY PLAY</span>
+            <h2>Why play Who Is the Imposter?</h2>
+            <p>It is a quick, easy social deduction game that works well for friends, family, classrooms, and casual hangouts. The rules are simple, the energy is fast, and everyone gets a chance to bluff, accuse, and laugh.</p>
+          </article>
+          <article className="info-panel">
+            <span className="eyebrow">HOW IT WORKS</span>
+            <h2>Game rules and how to win</h2>
+            <p>Each player receives a secret word or a cover story. The imposter knows they are pretending, while the rest of the group gives clues and tries to identify the lie. The team wins when they correctly catch the imposter, and the imposter wins by blending in long enough to survive.</p>
+          </article>
+          <article className="info-panel">
+            <span className="eyebrow">PLAY WITH FRIENDS</span>
+            <h2>Play with friends and small groups</h2>
+            <p>Who Is the Imposter supports 3 to 12 players and is designed for quick rounds, easy setup, and instant laughs. It is ideal for parties, game nights, and casual online hangouts.</p>
+          </article>
+        </section>
+
+        <section className="faq-section" aria-labelledby="faq-heading">
+          <div className="section-heading compact-heading">
+            <span className="eyebrow">FAQ</span>
+            <h2 id="faq-heading">Frequently asked questions</h2>
+          </div>
+          <div className="faq-list">
+            <details open>
+              <summary>How many players can join?</summary>
+              <p>The game supports 3–12 players, so it works for small friend groups and larger party rounds.</p>
+            </details>
+            <details>
+              <summary>Can I play for free?</summary>
+              <p>Yes. This is a free online imposter game that runs in the browser and does not require a signup or paid account.</p>
+            </details>
+            <details>
+              <summary>What happens during each round?</summary>
+              <p>Players receive secret words or a cover story, discuss clues, and vote on who seems suspicious before the round is revealed.</p>
+            </details>
+            <details>
+              <summary>Is it good for party games?</summary>
+              <p>Absolutely. It is built for fast, social, lighthearted rounds that encourage conversation, bluffing, and friendly chaos.</p>
+            </details>
+          </div>
+        </section>
+
+        <section className="cta-section">
+          <h2>Ready to find the imposter?</h2>
           <button className="button button-primary hero-cta" onClick={onStart} type="button">
             Set up a game <span aria-hidden="true">↗</span>
           </button>
-          <div className="hero-meta">
-            <span><strong>3–12</strong> players</span>
-            <span className="meta-divider" />
-            <span><strong>5 min</strong> to play</span>
-            <span className="meta-divider" />
-            <span><strong>100%</strong> suspicion</span>
-          </div>
-        </div>
-        <div className="hero-art" aria-label="A detective magnifying glass illustration">
-          <div className="art-orbit orbit-one" />
-          <div className="art-orbit orbit-two" />
-          <span className="art-spark spark-one">✳</span>
-          <span className="art-spark spark-two">✦</span>
-          <div className="detective-card">
-            <span className="detective-emoji" aria-hidden="true">🕵️</span>
-            <span className="detective-stamp">CASE<br />NO. 001</span>
-          </div>
-          <div className="clue-card clue-card-top"><span>THE WORD</span><strong>?</strong></div>
-          <div className="clue-card clue-card-bottom"><span>THE SUSPECT</span><strong>Among us</strong></div>
-        </div>
-      </section>
+        </section>
 
-      <section className="how-section">
-        <div className="section-heading">
-          <span className="eyebrow">QUICK BRIEFING</span>
-          <h2>Trust no one.<br /><span>Especially your friends.</span></h2>
-        </div>
-        <div className="steps-grid">
-          <article className="step-card"><span className="step-number">01</span><span className="step-icon">👥</span><h3>Gather your crew</h3><p>Add 3–12 players. The more suspicious, the better.</p></article>
-          <article className="step-card"><span className="step-number">02</span><span className="step-icon">🤫</span><h3>Keep it secret</h3><p>Pass the phone. Everyone gets the word… except the imposter.</p></article>
-          <article className="step-card"><span className="step-number">03</span><span className="step-icon">🗳️</span><h3>Call their bluff</h3><p>Drop clues, discuss, vote, and reveal who fooled you.</p></article>
-        </div>
-      </section>
-      <footer className="app-footer"><span>Made for suspicious friend groups.</span><span>Party edition <span aria-hidden="true">✳</span></span></footer>
-    </div>
+        <footer className="app-footer"><span>Made for suspicious friend groups.</span><span>Party edition <span aria-hidden="true">✳</span></span></footer>
+      </div>
+    </>
   );
 }
 

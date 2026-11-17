@@ -7,6 +7,9 @@ const withPWA = require("next-pwa")({
 });
 
 const nextConfig = {
+  experimental: {
+    agentUpgrade: "security",
+  },
   turbopack: {},
 };
 

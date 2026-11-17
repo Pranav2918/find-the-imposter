@@ -7,20 +7,53 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Find the Imposter — Party Game",
+  metadataBase: new URL("https://whotheimposter.vercel.app"),
+  title: "Who Is the Imposter? Play the Free Online Party Game",
   description:
-    "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite categories.",
+    "Play Who Is the Imposter, a free online party game for 3–12 players. Share secret words, give clues, and catch the imposter with friends.",
+  applicationName: "Who Is the Imposter",
   manifest: "/manifest.json",
+  keywords: [
+    "imposter game",
+    "who is the imposter game",
+    "imposter game online",
+    "free imposter game",
+    "online party games",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Imposter",
   },
   openGraph: {
-    title: "Find the Imposter 🕵️ — Party Edition",
+    title: "Who Is the Imposter? Play the Free Online Party Game",
     description:
-      "Party game for cafes and friend groups. Pass the phone, find the imposter!",
+      "Play Who Is the Imposter, a free online party game for 3–12 players. Share secret words, give clues, and catch the imposter with friends.",
+    url: "https://whotheimposter.vercel.app",
     type: "website",
+    siteName: "Who Is the Imposter",
+    images: [
+      {
+        url: "/icons/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Who Is the Imposter game icon",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Who Is the Imposter? Play the Free Online Party Game",
+    description:
+      "Play Who Is the Imposter, a free online party game for 3–12 players. Share secret words, give clues, and catch the imposter with friends.",
+    images: ["/icons/icon-512x512.png"],
   },
   verification: {
     google: "K207YFi4QlO6zxs9_bwt_5PLHgE37lr8cWnDk502cHc",
