@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     description: "Party game for cafes and friend groups. Pass the phone, find the imposter!",
     type: "website",
   },
+  verification: {
+    google: "K207YFi4QlO6zxs9_bwt_5PLHgE37lr8cWnDk502cHc",
+  },
 };
 
 export const viewport: Viewport = {
