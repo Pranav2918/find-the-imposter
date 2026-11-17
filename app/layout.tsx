@@ -1,12 +1,15 @@
+
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Find the Imposter — Party Game",
-  description: "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite categories.",
+  description:
+    "Pass the phone, share a secret word, and figure out who is bluffing. Choose from your favorite categories.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -15,7 +18,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Find the Imposter 🕵️ — Party Edition",
-    description: "Party game for cafes and friend groups. Pass the phone, find the imposter!",
+    description:
+      "Party game for cafes and friend groups. Pass the phone, find the imposter!",
     type: "website",
   },
   verification: {
@@ -37,10 +41,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link
+          rel="apple-touch-icon"
+          href="/icons/icon-192x192.png"
+        />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className={`${geist.className} antialiased`}>{children}</body>
+
+      <body className={`${geist.className} antialiased`}>
+        {children}
+
+        <GoogleAnalytics gaId="G-053P22C58N" />
+      </body>
     </html>
   );
 }
